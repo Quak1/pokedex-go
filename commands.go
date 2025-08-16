@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/Quak1/pokedex-go/internal/pokeapi"
+	"math/rand"
 	"os"
+	"strings"
+
+	"github.com/Quak1/pokedex-go/internal/pokeapi"
 )
 
 type cliCommand struct {
@@ -13,9 +16,10 @@ type cliCommand struct {
 }
 
 type Config struct {
-	Next     *string
-	Previous *string
-	Client   pokeapi.Client
+	Next          *string
+	Previous      *string
+	Client        pokeapi.Client
+	CaughtPokemon map[string]pokeapi.Pokemon
 }
 
 func getCommands() map[string]cliCommand {
@@ -44,6 +48,11 @@ func getCommands() map[string]cliCommand {
 			name:        "explore <area_name>",
 			description: "Get pokemon encounters for a given area",
 			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch <pokemon_name>",
+			description: "Catch a Pokemon!",
+			callback:    commandCatch,
 		},
 	}
 }
@@ -121,6 +130,36 @@ func commandExplore(config *Config, args ...string) error {
 	for _, encounter := range area.PokemonEncounters {
 		fmt.Printf(" - %s\n", encounter.Pokemon.Name)
 	}
+
+	return nil
+}
+
+func commandCatch(config *Config, args ...string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("Missing pokemon name")
+	}
+
+	pokemonName := strings.ToLower(args[0])
+	pokemon, ok := config.CaughtPokemon[pokemonName]
+	if ok {
+		fmt.Printf("%s has already been caught\n", pokemon.Name)
+		return nil
+	}
+
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
+	pokemon, err := config.Client.GetPokemon(pokemonName)
+	if err != nil {
+		return err
+	}
+
+	isCaught := rand.Intn(pokemon.BaseExperience) <= 60
+	if !isCaught {
+		fmt.Printf("%s escaped!\n", pokemon.Name)
+		return nil
+	}
+
+	fmt.Printf("%s was caught!\n", pokemon.Name)
+	config.CaughtPokemon[pokemonName] = pokemon
 
 	return nil
 }
