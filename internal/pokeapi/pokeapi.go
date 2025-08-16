@@ -2,6 +2,7 @@ package pokeapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -60,4 +61,35 @@ func (c *Client) GetLocationAreas(page *string) (LocationAreaList, error) {
 	}
 
 	return areas, nil
+}
+
+func (c *Client) GetLocationDetails(name string) (LocationArea, error) {
+	url := baseUrl + "location-area/" + name
+
+	data, ok := c.cache.Get(url)
+	if !ok {
+		res, err := c.httpClient.Get(url)
+		if err != nil {
+			return LocationArea{}, err
+		}
+		defer res.Body.Close()
+
+		if res.StatusCode == http.StatusNotFound {
+			return LocationArea{}, fmt.Errorf("Area not found, check your spelling")
+		}
+
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return LocationArea{}, err
+		}
+
+		c.cache.Add(url, data)
+	}
+
+	var details LocationArea
+	if err := json.Unmarshal(data, &details); err != nil {
+		return LocationArea{}, err
+	}
+
+	return details, nil
 }

@@ -9,7 +9,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*Config) error
+	callback    func(config *Config, args ...string) error
 }
 
 type Config struct {
@@ -40,16 +40,21 @@ func getCommands() map[string]cliCommand {
 			description: "Get the previous 20 locations",
 			callback:    commandMapb,
 		},
+		"explore": {
+			name:        "explore <area_name>",
+			description: "Get pokemon encounters for a given area",
+			callback:    commandExplore,
+		},
 	}
 }
 
-func commandExit(config *Config) error {
+func commandExit(config *Config, args ...string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(config *Config) error {
+func commandHelp(config *Config, args ...string) error {
 	fmt.Println("\nWelcome to the Pokedex!")
 	fmt.Printf("Usage:\n\n")
 
@@ -62,7 +67,7 @@ func commandHelp(config *Config) error {
 	return nil
 }
 
-func commandMap(config *Config) error {
+func commandMap(config *Config, args ...string) error {
 	areas, err := config.Client.GetLocationAreas(config.Next)
 	if err != nil {
 		return err
@@ -78,7 +83,7 @@ func commandMap(config *Config) error {
 	return nil
 }
 
-func commandMapb(config *Config) error {
+func commandMapb(config *Config, args ...string) error {
 	if config.Previous == nil {
 		fmt.Println("You are on the first page")
 		return nil
@@ -94,6 +99,27 @@ func commandMapb(config *Config) error {
 
 	for _, area := range areas.Results {
 		println(area.Name)
+	}
+
+	return nil
+}
+
+func commandExplore(config *Config, args ...string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("Missing area argument")
+	}
+
+	areaName := args[0]
+	fmt.Printf("Exploring %s...\n", areaName)
+
+	area, err := config.Client.GetLocationDetails(areaName)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Found Pokemon:")
+	for _, encounter := range area.PokemonEncounters {
+		fmt.Printf(" - %s\n", encounter.Pokemon.Name)
 	}
 
 	return nil

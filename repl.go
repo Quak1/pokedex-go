@@ -26,7 +26,7 @@ func repl(config *Config) {
 			continue
 		}
 
-		err := command.callback(config)
+		err := command.callback(config, words[1:]...)
 		if err != nil {
 			fmt.Println(err)
 		}
