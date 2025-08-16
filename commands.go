@@ -15,6 +15,7 @@ type cliCommand struct {
 type Config struct {
 	Next     *string
 	Previous *string
+	Client   pokeapi.Client
 }
 
 func getCommands() map[string]cliCommand {
@@ -62,7 +63,7 @@ func commandHelp(config *Config) error {
 }
 
 func commandMap(config *Config) error {
-	areas, err := pokeapi.GetLocationAreas(config.Next)
+	areas, err := config.Client.GetLocationAreas(config.Next)
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,7 @@ func commandMapb(config *Config) error {
 		return nil
 	}
 
-	areas, err := pokeapi.GetLocationAreas(config.Previous)
+	areas, err := config.Client.GetLocationAreas(config.Previous)
 	if err != nil {
 		return err
 	}
